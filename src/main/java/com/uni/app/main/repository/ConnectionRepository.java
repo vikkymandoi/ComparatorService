@@ -25,6 +25,10 @@ public class ConnectionRepository implements ApplicationContextAware{
 	private String connPoolEnvList;
 	private static Map<String, ConnectionPool> map = new HashMap<String, ConnectionPool>();
 	private ApplicationContext applicationContext;
+	@Override
+	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+		this.applicationContext = applicationContext;
+	}
 	
 	@PostConstruct
 	public void createConnectionPool() {
@@ -42,10 +46,5 @@ public class ConnectionRepository implements ApplicationContextAware{
 			createConnectionPool();
 		}
 		return map.get(env).getConnection();
-	}
-	
-	@Override
-	public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-		this.applicationContext = applicationContext;
 	}
 }

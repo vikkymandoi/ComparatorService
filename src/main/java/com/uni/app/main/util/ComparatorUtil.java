@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.uni.app.main.modal.ColumnInfo;
@@ -23,7 +24,13 @@ public class ComparatorUtil {
 		result.put(ComparatorConstants.TABLE_NAME, tableName);
 		return result;
 	}
-
+	
+	public static String getStringfromList(List<String> list) {
+		if(list == null || list.isEmpty())
+			return null;
+		return list.toString().replaceAll(",", "\n").replaceAll("\\[|\\]| ", "");
+	}
+	
 	public static Map<String, ColumnInfo> getColumnMetadataMap(Connection conn, Map<String, String> schemaTableMap) {
 		try {
 			String schemaName = schemaTableMap.get(ComparatorConstants.SCHEMA_NAME);
@@ -80,7 +87,7 @@ public class ComparatorUtil {
 		return false;
 	}
 
-	public static void publishColumnInfoOutput(String type, ColumnInfo columnInfo) {
+	public static String createDDLOutput(String type, ColumnInfo columnInfo) {
 		String str = "ALTER TABLE " + columnInfo.getSchemaName() + "." + columnInfo.getTableName();
 		switch (type.toUpperCase()) {
 		case "ALTER":
@@ -105,7 +112,7 @@ public class ComparatorUtil {
 			}
 			break;
 		}
-		//publishColumnInfoOutput(str);
+		return str;
 	}
 
 	public static Map<Integer, String> allJdbcTypeName = null;
