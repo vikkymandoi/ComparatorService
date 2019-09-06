@@ -6,6 +6,35 @@ public class TableMetadataReq {
 	private List<String> tableNames;
 	private String primaryEnv;
 	private String secondaryEnv;
+	private String primaryTableName;
+	private String secondaryTableName;
+	private String primaryColName;
+	private String secondaryColName;
+	
+	public String getPrimaryTableName() {
+		return primaryTableName;
+	}
+	public void setPrimaryTableName(String primaryTableName) {
+		this.primaryTableName = primaryTableName;
+	}
+	public String getSecondaryTableName() {
+		return secondaryTableName;
+	}
+	public void setSecondaryTableName(String secondaryTableName) {
+		this.secondaryTableName = secondaryTableName;
+	}
+	public String getPrimaryColName() {
+		return primaryColName;
+	}
+	public void setPrimaryColName(String primaryColName) {
+		this.primaryColName = primaryColName;
+	}
+	public String getSecondaryColName() {
+		return secondaryColName;
+	}
+	public void setSecondaryColName(String secondaryColName) {
+		this.secondaryColName = secondaryColName;
+	}
 	public List<String> getTableNames() {
 		return tableNames;
 	}
@@ -26,7 +55,8 @@ public class TableMetadataReq {
 	}
 	@Override
 	public String toString() {
-		return "TableMetaDataModal [tableNames=" + tableNames + ", primaryEnv=" + primaryEnv + ", secondaryEnv="
-				+ secondaryEnv + "]";
+		return "TableMetadataReq [tableNames=" + tableNames + ", primaryEnv=" + primaryEnv + ", secondaryEnv="
+				+ secondaryEnv + ", primaryTableName=" + primaryTableName + ", secondaryTableName=" + secondaryTableName
+				+ ", primaryColName=" + primaryColName + ", secondaryColName=" + secondaryColName + "]";
 	}
 }
