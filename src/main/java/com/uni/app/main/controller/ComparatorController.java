@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.uni.app.main.dao.TableMetadataComparatorDao;
 import com.uni.app.main.request.modal.TableMetadataReq;
 import com.uni.app.main.response.modal.OutputResponse;
 
@@ -36,14 +37,8 @@ public class ComparatorController implements ApplicationContextAware{
 			produces = {"application/JSON"})
 	public ResponseEntity<OutputResponse> compareTableMetaData(@RequestBody TableMetadataReq tableMetadata) {
 		logger.info("Table Metadata request {}", tableMetadata.toString());
-		OutputResponse outputResponse = new OutputResponse();
-		outputResponse.setOutput("THIS IS OUTPUT1");
-		outputResponse.setOutput("THIS IS OUTPUT2");
-		outputResponse.setOutput("THIS IS OUTPUT3");
-		outputResponse.setError("THIS IS ERROR1");
-		outputResponse.setError("THIS IS ERROR2");
+		TableMetadataComparatorDao tabMetaCompDao = applicationContext.getBean("tableMetadataComparatorDao", TableMetadataComparatorDao.class);
+		OutputResponse outputResponse = tabMetaCompDao.compareTableMeta(tableMetadata, tableMetadata.getPrimaryEnv(), tableMetadata.getSecondaryEnv());
 		return new ResponseEntity<OutputResponse>(outputResponse, HttpStatus.OK);
-		//TableMetadataComparatorDao tableMetadataComparatorDao = applicationContext.getBean("tableMetadataComparatorDao", TableMetadataComparatorDao.class);
-		//return tableMetadataComparatorDao.compareTableColumns(tableMetadata.getTableNames(),tableMetadata.getPrimaryEnv(), tableMetadata.getSecondaryEnv());
 	}
 }

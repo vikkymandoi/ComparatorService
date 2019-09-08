@@ -8,8 +8,7 @@ public class TableMetadataReq {
 	private String secondaryEnv;
 	private String primaryTableName;
 	private String secondaryTableName;
-	private String primaryColName;
-	private String secondaryColName;
+	private List<String> columnNames;
 	
 	public String getPrimaryTableName() {
 		return primaryTableName;
@@ -23,17 +22,11 @@ public class TableMetadataReq {
 	public void setSecondaryTableName(String secondaryTableName) {
 		this.secondaryTableName = secondaryTableName;
 	}
-	public String getPrimaryColName() {
-		return primaryColName;
+	public void setColumnNames(List<String> columnNames) {
+		this.columnNames = columnNames;
 	}
-	public void setPrimaryColName(String primaryColName) {
-		this.primaryColName = primaryColName;
-	}
-	public String getSecondaryColName() {
-		return secondaryColName;
-	}
-	public void setSecondaryColName(String secondaryColName) {
-		this.secondaryColName = secondaryColName;
+	public List<String> getColumnNames() {
+		return columnNames;
 	}
 	public List<String> getTableNames() {
 		return tableNames;
@@ -57,6 +50,6 @@ public class TableMetadataReq {
 	public String toString() {
 		return "TableMetadataReq [tableNames=" + tableNames + ", primaryEnv=" + primaryEnv + ", secondaryEnv="
 				+ secondaryEnv + ", primaryTableName=" + primaryTableName + ", secondaryTableName=" + secondaryTableName
-				+ ", primaryColName=" + primaryColName + ", secondaryColName=" + secondaryColName + "]";
+				+ ", columnNames=" + columnNames + "]";
 	}
 }
