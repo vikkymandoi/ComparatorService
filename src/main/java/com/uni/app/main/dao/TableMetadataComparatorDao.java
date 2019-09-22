@@ -25,7 +25,8 @@ public class TableMetadataComparatorDao {
 	private OutputResponse response = new OutputResponse();
 
 	public OutputResponse compareTableMeta(TableMetadataReq tableMetadata, String primaryEnv, String secondaryEnv) {
-		if (!tableMetadata.getTableNames().isEmpty()) {
+		List<String> tablenames = tableMetadata.getTableNames();
+		if (tablenames != null && !tablenames.isEmpty()) {
 			return compareTables(tableMetadata.getTableNames(), tableMetadata.getPrimaryEnv(),
 					tableMetadata.getSecondaryEnv());
 		} else {
@@ -54,14 +55,11 @@ public class TableMetadataComparatorDao {
 
 	public OutputResponse compareTableColumns(TableMetadataReq tableMetadata, String priEnv, String secEnv) {
 		try {
-			Map<String, String> primaryTableSchemaMap = ComparatorUtil
-					.getSchemaTableMap(tableMetadata.getPrimaryTableName());
-			Map<String, String> secondaryTableSchemaMap = ComparatorUtil
-					.getSchemaTableMap(tableMetadata.getSecondaryTableName());
-			Map<String, ColumnInfo> primaryColMap = ComparatorUtil
-					.getColumnMetadataMap(connectionRepository.getConnection(priEnv), primaryTableSchemaMap);
-			Map<String, ColumnInfo> secondaryColMap = ComparatorUtil
-					.getColumnMetadataMap(connectionRepository.getConnection(secEnv), secondaryTableSchemaMap);
+			Map<String, String> primaryTableSchemaMap = ComparatorUtil.getSchemaTableMap(tableMetadata.getPrimaryTableName());
+			Map<String, String> secondaryTableSchemaMap = ComparatorUtil.getSchemaTableMap(tableMetadata.getSecondaryTableName());
+			Map<String, ColumnInfo> primaryColMap = ComparatorUtil.getColumnMetadataMap(connectionRepository.getConnection(priEnv), primaryTableSchemaMap);
+			Map<String, ColumnInfo> secondaryColMap = ComparatorUtil.getColumnMetadataMap(connectionRepository.getConnection(secEnv), secondaryTableSchemaMap);
+			
 			for (String columnName : primaryColMap.keySet()) {
 				if (!tableMetadata.getColumnNames().contains(columnName)) {
 					primaryColMap.remove(columnName);
@@ -70,6 +68,7 @@ public class TableMetadataComparatorDao {
 					tableMetadata.getColumnNames().remove(columnName);
 				}
 			}
+			
 			if (!tableMetadata.getColumnNames().isEmpty()) {
 				for (String invalidColumnNames : tableMetadata.getColumnNames()) {
 					response.setInvalidList("INVALID COLUMN NAME: " + invalidColumnNames);
@@ -80,7 +79,7 @@ public class TableMetadataComparatorDao {
 			response.setError("Exception while Comparing Primary Secondary Tables  ERROR :- " + e.getMessage());
 			logger.error("Exception while Comparing Primary Secondary Tables -- ERROR -- {}", e);
 		}
-		return null;
+		return response;
 	}
 
 	public void compareColumns(Map<String, ColumnInfo> primaryColMap, Map<String, ColumnInfo> secondaryColMap) {

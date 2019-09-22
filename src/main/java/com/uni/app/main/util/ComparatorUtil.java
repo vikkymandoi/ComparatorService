@@ -31,7 +31,7 @@ public class ComparatorUtil {
 		return list.toString().replaceAll(",", "\n").replaceAll("\\[|\\]| ", "");
 	}
 	
-	public static Map<String, ColumnInfo> getColumnMetadataMap(Connection conn, Map<String, String> schemaTableMap) {
+	public static synchronized Map<String, ColumnInfo> getColumnMetadataMap(Connection conn, Map<String, String> schemaTableMap) {
 		try {
 			String schemaName = schemaTableMap.get(ComparatorConstants.SCHEMA_NAME);
 			String tableName = schemaTableMap.get(ComparatorConstants.TABLE_NAME);
