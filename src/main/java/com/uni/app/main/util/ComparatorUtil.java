@@ -1,18 +1,26 @@
 package com.uni.app.main.util;
 
-import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+import com.uni.app.main.dao.TableMetadataComparatorDao;
 import com.uni.app.main.modal.ColumnInfo;
 
+@Component
+@Scope("prototype")
 public class ComparatorUtil {
-	public static Map<String, String> getSchemaTableMap(String tableNameWithSchema) {
+	private static final Logger logger = LoggerFactory.getLogger(TableMetadataComparatorDao.class);
+	
+	public Map<String, String> getSchemaTableMap(String tableNameWithSchema) {
 		if (isNullorEmpty(tableNameWithSchema)) {
 			return null;
 		}
@@ -25,21 +33,21 @@ public class ComparatorUtil {
 		return result;
 	}
 	
-	public static String getStringfromList(List<String> list) {
+	public String getStringfromList(List<String> list) {
 		if(list == null || list.isEmpty())
 			return null;
 		return list.toString().replaceAll(",", "\n").replaceAll("\\[|\\]| ", "");
 	}
 	
-	public static synchronized Map<String, ColumnInfo> getColumnMetadataMap(Connection conn, Map<String, String> schemaTableMap) {
+	public Map<String, ColumnInfo> getColumnMetadataMap(Connection conn, Map<String, String> schemaTableMap, List<String> tableColumnsNames) {
 		try {
 			String schemaName = schemaTableMap.get(ComparatorConstants.SCHEMA_NAME);
 			String tableName = schemaTableMap.get(ComparatorConstants.TABLE_NAME);
-			ResultSet resultSetConnOne = conn.getMetaData().getColumns(null, schemaName, tableName, null);
-			Map<String, ColumnInfo> resultSetTwoColInfo = getColumnInfo(schemaName, tableName, resultSetConnOne);
+			ResultSet columnsMetaData = conn.getMetaData().getColumns(null, schemaName, tableName, null);
+			Map<String, ColumnInfo> resultSetTwoColInfo = getColumnInfo(schemaName, tableName, columnsMetaData, tableColumnsNames);
 			return resultSetTwoColInfo;
 		} catch (SQLException e) {
-			e.printStackTrace();
+			logger.error("Error While getting column metadata map {}", e);
 		}
 		return null;
 	}
@@ -48,15 +56,19 @@ public class ComparatorUtil {
 	 * Number Type mapping 12-----VARCHAR 3-----DECIMAL 93-----TIMESTAMP
 	 * 1111-----OTHER
 	 */
-	public static Map<String, ColumnInfo> getColumnInfo(String schemaName, String tableName, ResultSet columns) {
+	public Map<String, ColumnInfo> getColumnInfo(String schemaName, String tableName, ResultSet columns, List<String> tableColumnsNames) {
 		try {
 			Map<String, ColumnInfo> tableColumnInfo = new LinkedHashMap<String, ColumnInfo>();
 			while (columns.next()) {
 				ColumnInfo columnInfo = new ColumnInfo();
 				columnInfo.setSchemaName(schemaName);
 				columnInfo.setTableName(tableName);
-				columnInfo.setColumnName(columns.getString("COLUMN_NAME"));
-				columnInfo.setDatatype(columns.getString("DATA_TYPE"));
+				String columnName = columns.getString("COLUMN_NAME");
+				if(tableColumnsNames != null && !tableColumnsNames.contains(columnName)) {
+					continue;
+				}
+				columnInfo.setColumnName(columnName);
+				columnInfo.setDatatype(columns.getString("TYPE_NAME"));
 				columnInfo.setColumnsize(columns.getString("COLUMN_SIZE"));
 				columnInfo.setDecimaldigits(columns.getString("DECIMAL_DIGITS"));
 				columnInfo.setIsNullable(columns.getString("IS_NULLABLE"));
@@ -64,12 +76,12 @@ public class ComparatorUtil {
 			}
 			return tableColumnInfo;
 		} catch (Exception e) {
-			e.printStackTrace();
+			logger.error("Error While Mapping column Info Data {}", e);
 		}
 		return null;
 	}
 
-	public static boolean isNullOrEmpty(Object obj) {
+	public boolean isNullOrEmpty(Object obj) {
 		if (obj == null)
 			return true;
 		if (String.valueOf(obj).equalsIgnoreCase("NULL"))
@@ -79,7 +91,7 @@ public class ComparatorUtil {
 		return false;
 	}
 
-	public static boolean isNullorEmpty(String str) {
+	public boolean isNullorEmpty(String str) {
 		if (str == null)
 			return true;
 		if (str.trim().length() == 0)
@@ -87,51 +99,31 @@ public class ComparatorUtil {
 		return false;
 	}
 
-	public static String createDDLOutput(String type, ColumnInfo columnInfo) {
+	public String createDDLOutput(String type, ColumnInfo columnInfo) {
 		String str = "ALTER TABLE " + columnInfo.getSchemaName() + "." + columnInfo.getTableName();
 		switch (type.toUpperCase()) {
-		case "ALTER":
-			if ("NUMBER".equalsIgnoreCase(columnInfo.getDatatype())
-					|| "DATE".equalsIgnoreCase(columnInfo.getDatatype())) {
-				str += " ADD (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + ");";
-			} else {
-				str += " ADD (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + "("
-						+ columnInfo.getColumnsize() + "));";
-			}
-			break;
-		case "DROP":
-			str += " DROP (" + columnInfo.getColumnName() + ");";
-			break;
-		case "MODIFY":
-			if ("NUMBER".equalsIgnoreCase(columnInfo.getDatatype())
-					|| "DATE".equalsIgnoreCase(columnInfo.getDatatype())) {
-				str += " MODIFY (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + ");";
-			} else {
-				str += " MODIFY (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + "("
-						+ columnInfo.getColumnsize() + "));";
-			}
-			break;
+			case "ADD":
+				if ("NUMBER".equalsIgnoreCase(columnInfo.getDatatype()) || "DATE".equalsIgnoreCase(columnInfo.getDatatype())) {
+					str += " ADD (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + ");";
+				} else {
+					str += " ADD (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + "(" + columnInfo.getColumnsize() + "));";
+				}
+				break;
+			case "DROP":
+				str += " DROP (" + columnInfo.getColumnName() + ");";
+				break;
+			case "MODIFY":
+				if ("NUMBER".equalsIgnoreCase(columnInfo.getDatatype()) || "DATE".equalsIgnoreCase(columnInfo.getDatatype())) {
+					str += " MODIFY (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + ");";
+				} else {
+					str += " MODIFY (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + "(" + columnInfo.getColumnsize() + "));";
+				}
+				break;
 		}
 		return str;
 	}
-
-	public static Map<Integer, String> allJdbcTypeName = null;
-
-	public static Map<Integer, String> getAllJdbcTypeNames() {
-		Map<Integer, String> result = new HashMap<Integer, String>();
-		if (allJdbcTypeName != null)
-			return allJdbcTypeName;
-		try {
-			for (Field field : java.sql.Types.class.getFields()) {
-				result.put((Integer) field.get(null), field.getName());
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		return allJdbcTypeName = result;
-	}
-
-	public static String getStringPlaces(String[] attribs) {
+	
+	public String getStringPlaces(String[] attribs) {
 		String params = "";
 		for (int i = 0; i < attribs.length; i++) {
 			params += "?,";

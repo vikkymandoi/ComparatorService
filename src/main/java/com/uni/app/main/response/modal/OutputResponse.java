@@ -5,7 +5,6 @@ import java.util.List;
 
 public class OutputResponse {
 	private List<String> outputList = new ArrayList<String>();
-	private List<String> invalidList = new ArrayList<String>();
 	private List<String> errorList = new ArrayList<String>();
 	public List<String> getOutputList() {
 		return outputList;
@@ -19,15 +18,10 @@ public class OutputResponse {
 	public void setError(String error) {
 		errorList.add(error);
 	}
-	public void setInvalidList(String invalidItem) {
-		invalidList.add(invalidItem);
-	}
-	public List<String> getInvalidList() {
-		return invalidList;
-	}
+	
 	@Override
 	public String toString() {
-		return "OutputResponse [outputList=" + outputList + ", invalidList=" + invalidList + ", errorList=" + errorList
-				+ "]";
+		return "OutputResponse [outputList=" + outputList +
+				", errorList=" + errorList + "]";
 	}
 }

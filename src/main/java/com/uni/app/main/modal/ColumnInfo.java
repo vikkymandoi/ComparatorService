@@ -103,16 +103,6 @@ public class ColumnInfo {
 				return false;
 		} else if (!isNullable.equals(other.isNullable))
 			return false;
-		if (schemaName == null) {
-			if (other.schemaName != null)
-				return false;
-		} else if (!schemaName.equals(other.schemaName))
-			return false;
-		if (tableName == null) {
-			if (other.tableName != null)
-				return false;
-		} else if (!tableName.equals(other.tableName))
-			return false;
 		return true;
 	}
 }

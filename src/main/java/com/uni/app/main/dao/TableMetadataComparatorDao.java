@@ -22,6 +22,8 @@ public class TableMetadataComparatorDao {
 	private static final Logger logger = LoggerFactory.getLogger(TableMetadataComparatorDao.class);
 	@Autowired
 	private ConnectionRepository connectionRepository;
+	@Autowired
+	private ComparatorUtil comparatorUtil;
 	private OutputResponse response = new OutputResponse();
 
 	public OutputResponse compareTableMeta(TableMetadataReq tableMetadata, String primaryEnv, String secondaryEnv) {
@@ -37,17 +39,15 @@ public class TableMetadataComparatorDao {
 	public OutputResponse compareTables(List<String> tableNames, String priEnv, String secEnv) {
 		try {
 			for (String schTableName : tableNames) {
-				Map<String, String> schemaTableMap = ComparatorUtil.getSchemaTableMap(schTableName);
-				Map<String, ColumnInfo> primaryColMap = ComparatorUtil
-						.getColumnMetadataMap(connectionRepository.getConnection(priEnv), schemaTableMap);
-				Map<String, ColumnInfo> secondaryColMap = ComparatorUtil
-						.getColumnMetadataMap(connectionRepository.getConnection(secEnv), schemaTableMap);
-				response.setOutput("Comparing table : " + schemaTableMap.get(ComparatorConstants.TABLE_NAME));
+				Map<String, String> schemaTableMap = comparatorUtil.getSchemaTableMap(schTableName);
+				Map<String, ColumnInfo> primaryColMap = comparatorUtil.getColumnMetadataMap(connectionRepository.getConnection(priEnv), schemaTableMap, null);
+				Map<String, ColumnInfo> secondaryColMap = comparatorUtil.getColumnMetadataMap(connectionRepository.getConnection(secEnv), schemaTableMap, null);
+				
+				response.setOutput("Comparision Result for Table : " + schemaTableMap.get(ComparatorConstants.TABLE_NAME));
 				compareColumns(primaryColMap, secondaryColMap);
 			}
 		} catch (Exception e) {
-			response.setError(
-					"Exception while Comparing Tables " + tableNames.toString() + "--- ERROR :- " + e.getMessage());
+			response.setError("Exception while Comparing Tables " + tableNames.toString() + "--- ERROR :- " + e.getMessage());
 			logger.error("Exception while Comparing Tables {} -- ERROR -- {}", tableNames.toString(), e);
 		}
 		return response;
@@ -55,28 +55,26 @@ public class TableMetadataComparatorDao {
 
 	public OutputResponse compareTableColumns(TableMetadataReq tableMetadata, String priEnv, String secEnv) {
 		try {
-			Map<String, String> primaryTableSchemaMap = ComparatorUtil.getSchemaTableMap(tableMetadata.getPrimaryTableName());
-			Map<String, String> secondaryTableSchemaMap = ComparatorUtil.getSchemaTableMap(tableMetadata.getSecondaryTableName());
-			Map<String, ColumnInfo> primaryColMap = ComparatorUtil.getColumnMetadataMap(connectionRepository.getConnection(priEnv), primaryTableSchemaMap);
-			Map<String, ColumnInfo> secondaryColMap = ComparatorUtil.getColumnMetadataMap(connectionRepository.getConnection(secEnv), secondaryTableSchemaMap);
+			Map<String, String> primaryTableSchemaMap = comparatorUtil.getSchemaTableMap(tableMetadata.getPrimaryTableName());
+			Map<String, String> secondaryTableSchemaMap = comparatorUtil.getSchemaTableMap(tableMetadata.getSecondaryTableName());
 			
-			for (String columnName : primaryColMap.keySet()) {
-				if (!tableMetadata.getColumnNames().contains(columnName)) {
-					primaryColMap.remove(columnName);
-					secondaryColMap.remove(columnName);
-				} else {
-					tableMetadata.getColumnNames().remove(columnName);
-				}
-			}
-			
-			if (!tableMetadata.getColumnNames().isEmpty()) {
-				for (String invalidColumnNames : tableMetadata.getColumnNames()) {
-					response.setInvalidList("INVALID COLUMN NAME: " + invalidColumnNames);
+			List<String> tableColumnsNames = tableMetadata.getColumnNames();
+			Map<String, ColumnInfo> primaryColMap = comparatorUtil.getColumnMetadataMap(connectionRepository.getConnection(priEnv), primaryTableSchemaMap, tableColumnsNames);
+			Map<String, ColumnInfo> secondaryColMap = comparatorUtil.getColumnMetadataMap(connectionRepository.getConnection(secEnv), secondaryTableSchemaMap, tableColumnsNames);
+
+			if (tableColumnsNames != null && !"*".equalsIgnoreCase(tableColumnsNames.get(0))) {
+				for (String columnName : tableColumnsNames) {
+					if (!primaryColMap.containsKey(columnName)) {
+						response.setError("INVALID COLUMN: " + columnName + " Column Name not available in Primary Db");
+					}
+					if (!secondaryColMap.containsKey(columnName)) {
+						response.setError("INVALID COLUMN: " + columnName + " Column Name not available in Secondary Db");
+					}
 				}
 			}
 			compareColumns(primaryColMap, secondaryColMap);
 		} catch (Exception e) {
-			response.setError("Exception while Comparing Primary Secondary Tables  ERROR :- " + e.getMessage());
+			response.setError("EXCEPTION while Comparing Primary Secondary Tables  ERROR :- " + e.getMessage());
 			logger.error("Exception while Comparing Primary Secondary Tables -- ERROR -- {}", e);
 		}
 		return response;
@@ -90,19 +88,19 @@ public class TableMetadataComparatorDao {
 				ColumnInfo primaryColInfo = entry.getValue();
 				ColumnInfo secondaryColInfo = secondaryColMap.remove(columnName);
 				if (secondaryColInfo == null) {
-					response.setOutput(ComparatorUtil.createDDLOutput("ALTER", primaryColInfo));
+					response.setOutput(comparatorUtil.createDDLOutput("ADD", primaryColInfo));
 					isEqual = false;
 					continue;
 				}
 				if (!primaryColInfo.equals(secondaryColInfo)) {
 					isEqual = false;
-					response.setOutput(ComparatorUtil.createDDLOutput("MODIFY", primaryColInfo));
+					response.setOutput(comparatorUtil.createDDLOutput("MODIFY", primaryColInfo));
 				}
 			}
 			if (!secondaryColMap.isEmpty()) {
 				isEqual = false;
 				for (Map.Entry<String, ColumnInfo> entry : secondaryColMap.entrySet()) {
-					response.setOutput(ComparatorUtil.createDDLOutput("DROP", entry.getValue()));
+					response.setOutput(comparatorUtil.createDDLOutput("DROP", entry.getValue()));
 				}
 			}
 
