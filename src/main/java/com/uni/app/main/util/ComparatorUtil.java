@@ -103,22 +103,29 @@ public class ComparatorUtil {
 		String str = "ALTER TABLE " + columnInfo.getSchemaName() + "." + columnInfo.getTableName();
 		switch (type.toUpperCase()) {
 			case "ADD":
-				if ("NUMBER".equalsIgnoreCase(columnInfo.getDatatype()) || "DATE".equalsIgnoreCase(columnInfo.getDatatype())) {
-					str += " ADD (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + ");";
-				} else {
-					str += " ADD (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + "(" + columnInfo.getColumnsize() + "));";
-				}
+				str += " ADD (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + " DATATYPE_SIZE NULLABLE_TYPE);";
 				break;
 			case "DROP":
 				str += " DROP (" + columnInfo.getColumnName() + ");";
 				break;
 			case "MODIFY":
-				if ("NUMBER".equalsIgnoreCase(columnInfo.getDatatype()) || "DATE".equalsIgnoreCase(columnInfo.getDatatype())) {
-					str += " MODIFY (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + ");";
-				} else {
-					str += " MODIFY (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + "(" + columnInfo.getColumnsize() + "));";
-				}
+				str += " MODIFY (" + columnInfo.getColumnName() + " " + columnInfo.getDatatype() + " :DATATYPE_SIZE NULLABLE_TYPE);";
 				break;
+		}
+		System.out.println(columnInfo.toString());
+		
+		// Adding DataType Size
+		if(columnInfo.getColumnsize() != null && columnInfo.getColumnsize().trim().length() != 0 ) {	
+			str = str.replaceAll("DATATYPE_SIZE", "(" +columnInfo.getColumnsize() +")") ; 
+		} else { 
+			str = str.replaceAll("DATATYPE_SIZE", ""); 
+		}
+		
+		// Adding DataType Size
+		if(columnInfo.getIsNullable() != null && "YES".equalsIgnoreCase(columnInfo.getIsNullable()) ) {	
+			str = str.replaceAll("NULLABLE_TYPE", "") ; 
+		} else { 
+			str = str.replaceAll("NULLABLE_TYPE", "NOT NULL"); 
 		}
 		return str;
 	}
